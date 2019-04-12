@@ -1,5 +1,5 @@
 //
-//  AppDelegate.swift
+//  ZQAppDelegate.swift
 //  ZQPopupMenu
 //
 //  Created by Darren on 2019/4/2.
@@ -9,7 +9,7 @@
 import UIKit
 
 @UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate {
+class ZQAppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
 
