@@ -87,32 +87,19 @@ public extension ZQPopupMenuTableViewCell {
 }
 
 // MARK: 代理
-public protocol ZQPopupMenuDelegate:NSObject {}
-
-public extension ZQPopupMenuDelegate {
-    func willShow(popMenu:ZQPopupMenu) {
-        
-    }
+@objc public protocol ZQPopupMenuDelegate:NSObjectProtocol {
     
-    func didShow(popMenu:ZQPopupMenu) {
-        
-    }
+    @objc optional func willShow(popMenu:ZQPopupMenu)
     
-    func willDismiss(popMenu:ZQPopupMenu) {
-        
-    }
+    @objc optional func didShow(popMenu:ZQPopupMenu)
     
-    func didDismiss(popMenu:ZQPopupMenu) {
-        
-    }
+    @objc optional func willDismiss(popMenu:ZQPopupMenu)
     
-    func cellForRow(popMenu:ZQPopupMenu, index:NSInteger) -> UITableViewCell {
-        return UITableViewCell()
-    }
+    @objc optional func didDismiss(popMenu:ZQPopupMenu)
     
-    func didSelected(popMenu:ZQPopupMenu, index:NSInteger) {
-        
-    }
+    @objc optional func didSelected(popMenu:ZQPopupMenu, index:NSInteger)
+    
+    @objc optional func cellForRow(popMenu:ZQPopupMenu, index:NSInteger) -> UITableViewCell
 }
 
 // MARK: 弹窗菜单视图
@@ -143,7 +130,7 @@ public class ZQPopupMenu: UIView {
         }
         backView.alpha = 0
         backView.isUserInteractionEnabled = true
-        let tap = UITapGestureRecognizer(target: self, action: #selector(dismiss))
+        let tap = UITapGestureRecognizer(target: self, action: #selector(actionForBackView))
         backView.addGestureRecognizer(tap)
         return backView
     }()
@@ -172,11 +159,14 @@ public class ZQPopupMenu: UIView {
     public weak var delegate:ZQPopupMenuDelegate?
     
     // MARK: life cycle
-    public convenience init(config:ZQPopupMenuConfig) {
+    deinit {
+        print("--__--|| \(self.classForCoder) dealloc")
+    }
+    
+    fileprivate convenience init(config:ZQPopupMenuConfig) {
         self.init()
         self.config = config
         setupViews()
-        updateUI()
     }
     
     public override var frame: CGRect {
@@ -219,42 +209,25 @@ public class ZQPopupMenu: UIView {
 // MARK: public
 public extension ZQPopupMenu {
     @discardableResult
-    class func showMenu(with config:ZQPopupMenuConfig) -> ZQPopupMenu {
+    class func showMenu(with config:ZQPopupMenuConfig, delegate:ZQPopupMenuDelegate? = nil) -> ZQPopupMenu {
         let popMenu = ZQPopupMenu(config: config)
+        popMenu.delegate = delegate
         popMenu.show()
         return popMenu
     }
     
-    func show() {
+    func dismiss() {
         guard let config = config else {
             return
         }
-        delegate?.willShow(popMenu: self)
-        let backConfig:ZQPopupMenuBackConfig = config.backConfig
-        layer.setAffineTransform(CGAffineTransform(scaleX: 0.1, y: 0.1))
-        UIView.animate(withDuration: TimeInterval(backConfig.animateDuration), animations: {
-            self.layer.setAffineTransform(CGAffineTransform(scaleX: 1.0, y: 1.0))
-            self.backView.alpha = 1
-            self.alpha = 1
-        }) { (finish) in
-            if finish {
-                self.delegate?.didShow(popMenu: self)
-            }
-        }
-    }
-    
-    @objc func dismiss() {
-        guard let config = config else {
-            return
-        }
-        delegate?.willDismiss(popMenu: self)
+        delegate?.willDismiss?(popMenu: self)
         let backConfig:ZQPopupMenuBackConfig = config.backConfig
         UIView.animate(withDuration: TimeInterval(backConfig.animateDuration), animations: {
             self.layer.setAffineTransform(CGAffineTransform(scaleX: 0.1, y: 0.1))
             self.alpha = 0
             self.backView.alpha = 0
         }) { (finish) in
-            self.delegate?.didDismiss(popMenu: self)
+            self.delegate?.didDismiss?(popMenu: self)
             self.delegate = nil
             self.backView.removeFromSuperview()
             self.removeFromSuperview()
@@ -303,7 +276,13 @@ extension ZQPopupMenu {
         let itemConfig:ZQPopupMenuItemConfig = config.itemConfig
         let backConfig:ZQPopupMenuBackConfig = config.backConfig
         let arrowConfig:ZQPopupMenuArrowConfig = config.arrowConfig
-        cellCount = max(itemConfig.customCellNumber, itemConfig.titlesArr.count)
+        
+        if let cell = delegate?.cellForRow?(popMenu: self, index: 0) {
+            cellCount =  itemConfig.customCellNumber
+        }
+        else {
+            cellCount = itemConfig.titlesArr.count
+        }
         
         /// 计算内容总高度
         if cellCount > itemConfig.maxVisibleCount {
@@ -437,6 +416,36 @@ extension ZQPopupMenu {
         default:break
         }
     }
+    
+    fileprivate func show() {
+        guard let config = config else {
+            return
+        }
+        delegate?.willShow?(popMenu: self)
+        updateUI()
+        let backConfig:ZQPopupMenuBackConfig = config.backConfig
+        layer.setAffineTransform(CGAffineTransform(scaleX: 0.1, y: 0.1))
+        UIView.animate(withDuration: TimeInterval(backConfig.animateDuration), animations: {
+            self.layer.setAffineTransform(CGAffineTransform(scaleX: 1.0, y: 1.0))
+            self.backView.alpha = 1
+            self.alpha = 1
+        }) { (finish) in
+            if finish {
+                self.delegate?.didShow?(popMenu: self)
+            }
+        }
+    }
+}
+
+extension ZQPopupMenu {
+    @objc func actionForBackView() {
+        guard let config = config else {
+            return
+        }
+        if config.backConfig.dismissOnTouchBack {
+            dismiss()
+        }
+    }
 }
 
 // MARK: UITableViewDelegate UITableViewDataSource
@@ -447,7 +456,9 @@ extension ZQPopupMenu:UITableViewDelegate, UITableViewDataSource {
     
     public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         if delegate != nil {
-            return delegate!.cellForRow(popMenu: self, index: indexPath.row)
+            if let cell = delegate!.cellForRow?(popMenu: self, index: indexPath.row) {
+                return cell
+            }
         }
         var cell:UITableViewCell? = tableView.dequeueReusableCell(withIdentifier: NSStringFromClass(ZQPopupMenuTableViewCell.self))
         if cell == nil {
@@ -464,7 +475,7 @@ extension ZQPopupMenu:UITableViewDelegate, UITableViewDataSource {
     
     public func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        delegate?.didSelected(popMenu: self, index: indexPath.row)
+        delegate?.didSelected?(popMenu: self, index: indexPath.row)
         guard let config = config else {
             return
         }

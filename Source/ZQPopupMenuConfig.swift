@@ -68,6 +68,9 @@ public class ZQPopupMenuBackConfig: NSObject {
     /// 选择菜单项后消失, 默认 true
     public var dismissOnSelected:Bool = true
     
+    /// 点击背景后消失, 默认 true
+    public var dismissOnTouchBack:Bool = true
+    
     /// 距离最近的屏幕的最小距离, 默认 10
     public var minSpace:CGFloat = 10.0
     

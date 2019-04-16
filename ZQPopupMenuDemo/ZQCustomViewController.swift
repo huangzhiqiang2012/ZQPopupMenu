@@ -35,7 +35,7 @@ class ZQCustomPopMenuTableViewCell: UITableViewCell {
     
     override func layoutSubviews() {
         super.layoutSubviews()
-        titleLabel.frame = CGRect(x: 15, y: (contentView.frame.size.height - 20) * 0.5, width: contentView.frame.size.width - 30, height: 20)
+        titleLabel.frame = CGRect(x: 15, y: (contentView.frame.size.height - 30) * 0.5, width: contentView.frame.size.width - 30, height: 30)
     }
 }
 
@@ -58,6 +58,8 @@ class ZQCustomViewController: UIViewController {
     fileprivate lazy var config:ZQPopupMenuConfig = {
         let config = ZQPopupMenuConfig()
         let backConfig = ZQPopupMenuBackConfig()
+        backConfig.dismissOnSelected = false
+        backConfig.dismissOnTouchBack = false
         backConfig.backColor = UIColor.black
         backConfig.borderColor = UIColor.red
         backConfig.borderWidth = 1
@@ -71,9 +73,7 @@ class ZQCustomViewController: UIViewController {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         let point = event?.allTouches?.first?.location(in: view)
         config.backConfig.showPoint = point ?? CGPoint.zero
-        let popMenu = ZQPopupMenu(config: config)
-        popMenu.delegate = self
-        popMenu.show()
+        ZQPopupMenu.showMenu(with: config, delegate: self)
     }
 }
 
@@ -86,5 +86,10 @@ extension ZQCustomViewController : ZQPopupMenuDelegate {
             (cell as! ZQCustomPopMenuTableViewCell).titleLabel.text = dataArr[index]
         }
         return cell!
+    }
+    
+    func didSelected(popMenu: ZQPopupMenu, index: NSInteger) {
+        print("--__--|| index___\(index)")
+        popMenu.dismiss()
     }
 }

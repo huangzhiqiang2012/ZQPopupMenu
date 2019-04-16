@@ -38,12 +38,18 @@ class ZQRootViewController: UIViewController {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         let point = event?.allTouches?.first?.location(in: view)
         config.backConfig.showPoint = point ?? CGPoint.zero
-        ZQPopupMenu.showMenu(with: config)
+        ZQPopupMenu.showMenu(with: config, delegate: self)
     }
 }
 
 extension ZQRootViewController {
     @objc fileprivate func actionForRightBarButtonItem() {
         navigationController?.pushViewController(ZQCustomViewController(), animated: true)
+    }
+}
+
+extension ZQRootViewController : ZQPopupMenuDelegate {
+    func didSelected(popMenu: ZQPopupMenu, index: NSInteger) {
+        print("--__--|| index___\(index)")
     }
 }
