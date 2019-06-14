@@ -53,7 +53,7 @@ public class ZQPopupMenuTableViewCell: UITableViewCell {
                     else {
                         imageView?.image = nil
                     }
-                    separatorView.frame = CGRect(x: info.separatorSpace, y: contentView.bounds.size.height - info.separatorHeight, width: contentView.bounds.size.width - 2 * info.separatorSpace, height: info.separatorHeight)
+                    separatorView.frame = CGRect(x: info.separatorSpace, y: info.itemHeight - info.separatorHeight, width: info.itemWidth - 2 * info.separatorSpace, height: info.separatorHeight)
                     separatorView.backgroundColor = info.separatorColor
                     separatorView.isHidden = row == info.titlesArr.count - 1
                 }
@@ -80,6 +80,7 @@ public class ZQPopupMenuTableViewCell: UITableViewCell {
 
 public extension ZQPopupMenuTableViewCell {
     fileprivate func setupViews() {
+        selectionStyle = .none
         backgroundColor = UIColor.clear
         contentView.addSubview(separatorView)
         textLabel?.numberOfLines = 0
