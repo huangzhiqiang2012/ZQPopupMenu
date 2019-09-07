@@ -11,7 +11,7 @@ import UIKit
 // MARK: ZQPopupMenuTableViewCell
 public class ZQPopupMenuTableViewCell: UITableViewCell {
     
-    fileprivate lazy var separatorView:UIView = {
+    private lazy var separatorView:UIView = {
         let separatorView:UIView = UIView()
         return separatorView
     }()
@@ -27,7 +27,7 @@ public class ZQPopupMenuTableViewCell: UITableViewCell {
                 }
                 if let row = index {
                     if info.titlesArr[row].isKind(of: NSAttributedString.self) {
-                       textLabel?.attributedText = (info.titlesArr[row] as! NSAttributedString)
+                        textLabel?.attributedText = (info.titlesArr[row] as! NSAttributedString)
                     }
                     else if info.titlesArr[row].isKind(of: NSString.self) {
                         textLabel?.textColor = info.textColor
@@ -79,7 +79,7 @@ public class ZQPopupMenuTableViewCell: UITableViewCell {
 }
 
 public extension ZQPopupMenuTableViewCell {
-    fileprivate func setupViews() {
+    private func setupViews() {
         selectionStyle = .none
         backgroundColor = UIColor.clear
         contentView.addSubview(separatorView)
@@ -100,31 +100,57 @@ public extension ZQPopupMenuTableViewCell {
     
     @objc optional func didSelected(popMenu:ZQPopupMenu, index:NSInteger)
     
-    @objc optional func cellForRow(popMenu:ZQPopupMenu, index:NSInteger) -> UITableViewCell
+    /// 自定义cell的Class
+    ///
+    /// - Parameter popMenu: 弹窗视图
+    /// - Returns: AnyClass
+    @objc optional func customTableViewCellClassForPopMenu(popMenu:ZQPopupMenu) -> AnyClass
+    
+    /// 自定义cell的Nib
+    ///
+    /// - Parameter popMenu: 弹窗视图
+    /// - Returns: UINib
+    @objc optional func customTableViewCellNibForPopMenu(popMenu:ZQPopupMenu) -> UINib
+    
+    /// 自定义cell的个数
+    ///
+    /// - Parameter popMenu: 弹窗视图
+    /// - Returns: Int
+    @objc optional func customTableViewCellNumber(popMenu:ZQPopupMenu) -> Int
+    
+    /// 自定义cell的数据填充
+    ///
+    /// - Parameters:
+    ///   - popMenu: 弹窗视图
+    ///   - cell: 自定义cell
+    ///   - index: 索引
+    @objc optional func setupCustomTableViewCell(popMenu:ZQPopupMenu, cell:UITableViewCell, forIndex index:Int)
 }
 
 // MARK: 弹窗菜单视图
 public class ZQPopupMenu: UIView {
     
+    private let reuseIdentifier:String = "ZQPopupMenuTableViewCell"
+    
     /// 配置信息
-    fileprivate var config:ZQPopupMenuConfig?
+    private var config:ZQPopupMenuConfig?
     
     /// 是否需要改变箭头方向
-    fileprivate var changeArrowDirection:Bool = false
+    private var changeArrowDirection:Bool = false
     
     /// 屏幕宽
-    fileprivate let screenWidth:CGFloat = UIScreen.main.bounds.size.width
+    private let screenWidth:CGFloat = UIScreen.main.bounds.size.width
     
     /// 屏幕高
-    fileprivate let screenHeight:CGFloat = UIScreen.main.bounds.size.height
+    private let screenHeight:CGFloat = UIScreen.main.bounds.size.height
     
     /// 内容高度
-    fileprivate var contentHeight:CGFloat = 0.0
+    private var contentHeight:CGFloat = 0.0
     
     /// cell个数
-    fileprivate var cellCount:Int = 0
+    private var cellCount:Int = 0
     
-    fileprivate lazy var backView:UIView = {
+    private lazy var backView:UIView = {
         let backView:UIView = UIView(frame: CGRect(x: 0, y: 0, width: UIScreen.main.bounds.size.width, height: UIScreen.main.bounds.size.height))
         if let config = config {
             backView.backgroundColor = config.backConfig.maskColor
@@ -136,7 +162,7 @@ public class ZQPopupMenu: UIView {
         return backView
     }()
     
-    fileprivate lazy var dataTableView:UITableView = {
+    private lazy var dataTableView:UITableView = {
         let dataTableView:UITableView = UITableView(frame: CGRect.zero, style: .plain)
         dataTableView.backgroundColor = UIColor.clear
         dataTableView.tableFooterView = UIView()
@@ -157,14 +183,28 @@ public class ZQPopupMenu: UIView {
         }
     }
     
-    public weak var delegate:ZQPopupMenuDelegate?
+    public weak var delegate:ZQPopupMenuDelegate? {
+        didSet {
+            if let delegate = delegate {
+                if let cellClass = delegate.customTableViewCellClassForPopMenu?(popMenu: self) {
+                    tableView.register(cellClass, forCellReuseIdentifier: reuseIdentifier)
+                }
+                else if let cellNib = delegate.customTableViewCellNibForPopMenu?(popMenu: self) {
+                    tableView.register(cellNib, forCellReuseIdentifier: reuseIdentifier)
+                }
+                else {
+                    tableView.register(ZQPopupMenuTableViewCell.self, forCellReuseIdentifier: reuseIdentifier)
+                }
+            }
+        }
+    }
     
     // MARK: life cycle
     deinit {
         print("--__--|| \(self.classForCoder) dealloc")
     }
     
-    fileprivate convenience init(config:ZQPopupMenuConfig) {
+    private convenience init(config:ZQPopupMenuConfig) {
         self.init()
         self.config = config
         setupViews()
@@ -239,7 +279,7 @@ public extension ZQPopupMenu {
 // MARK: private
 extension ZQPopupMenu {
     
-    fileprivate func setupViews() {
+    private func setupViews() {
         guard let window = UIApplication.shared.keyWindow, let config = config else {
             return
         }
@@ -252,7 +292,7 @@ extension ZQPopupMenu {
         addSubview(dataTableView)
     }
     
-    fileprivate func updateUI() {
+    private func updateUI() {
         guard let config = config else {
             return
         }
@@ -270,7 +310,7 @@ extension ZQPopupMenu {
         setNeedsDisplay()
     }
     
-    fileprivate func updateArrow() {
+    private func updateArrow() {
         guard let config = config else {
             return
         }
@@ -278,8 +318,11 @@ extension ZQPopupMenu {
         let backConfig:ZQPopupMenuBackConfig = config.backConfig
         let arrowConfig:ZQPopupMenuArrowConfig = config.arrowConfig
         
-        if let cell = delegate?.cellForRow?(popMenu: self, index: 0) {
-            cellCount =  itemConfig.customCellNumber
+        if let _ = delegate?.customTableViewCellClassForPopMenu?(popMenu: self), let customCellNumber = delegate?.customTableViewCellNumber?(popMenu: self) {
+            cellCount =  customCellNumber
+        }
+        else if let _ = delegate?.customTableViewCellNibForPopMenu?(popMenu: self), let customCellNumber = delegate?.customTableViewCellNumber?(popMenu: self) {
+            cellCount =  customCellNumber
         }
         else {
             cellCount = itemConfig.titlesArr.count
@@ -371,7 +414,7 @@ extension ZQPopupMenu {
         }
     }
     
-    fileprivate func updateFrame() {
+    private func updateFrame() {
         guard let config = config else {
             return
         }
@@ -410,18 +453,16 @@ extension ZQPopupMenu {
             
         case .left:
             self.frame = CGRect(x: point.x, y: point.y - arrowPosition, width: itemWidth + arrowHeight, height: contentHeight)
-        
+            
         case .right:
             self.frame = CGRect(x: point.x - itemWidth - arrowHeight, y: point.y - arrowPosition, width: itemWidth + arrowHeight, height: contentHeight)
-
+            
         default:break
         }
     }
     
-    fileprivate func show() {
-        guard let config = config else {
-            return
-        }
+    private func show() {
+        guard let config = config else { return }
         delegate?.willShow?(popMenu: self)
         updateUI()
         let backConfig:ZQPopupMenuBackConfig = config.backConfig
@@ -440,55 +481,50 @@ extension ZQPopupMenu {
 
 extension ZQPopupMenu {
     @objc func actionForBackView() {
-        guard let config = config else {
-            return
-        }
+        guard let config = config else { return }
         if config.backConfig.dismissOnTouchBack {
             dismiss()
         }
     }
 }
 
-// MARK: UITableViewDelegate UITableViewDataSource
+// MARK: UITableViewDelegate & UITableViewDataSource
 extension ZQPopupMenu:UITableViewDelegate, UITableViewDataSource {
     public func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return cellCount
     }
     
     public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        if delegate != nil {
-            if let cell = delegate!.cellForRow?(popMenu: self, index: indexPath.row) {
-                return cell
+        let cell:UITableViewCell = tableView.dequeueReusableCell(withIdentifier: reuseIdentifier, for: indexPath)
+        if let _ = delegate?.customTableViewCellClassForPopMenu?(popMenu: self), let _ = delegate?.setupCustomTableViewCell?(popMenu: self, cell: cell, forIndex: indexPath.item) {
+            delegate?.setupCustomTableViewCell?(popMenu: self, cell: cell, forIndex: indexPath.item)
+            return cell
+        } else if let _ = delegate?.customTableViewCellNibForPopMenu?(popMenu: self), let _ = delegate?.setupCustomTableViewCell?(popMenu: self, cell: cell, forIndex: indexPath.item) {
+            delegate?.setupCustomTableViewCell?(popMenu: self, cell: cell, forIndex: indexPath.item)
+            return cell
+        }
+        else {
+            if cell.isKind(of: ZQPopupMenuTableViewCell.self) {
+                guard let config = config else { return cell }
+                let itemConfig = config.itemConfig
+                (cell as! ZQPopupMenuTableViewCell).index = indexPath.row
+                (cell as! ZQPopupMenuTableViewCell).itemConfig = itemConfig
             }
+            return cell
         }
-        var cell:UITableViewCell? = tableView.dequeueReusableCell(withIdentifier: NSStringFromClass(ZQPopupMenuTableViewCell.self))
-        if cell == nil {
-            cell = ZQPopupMenuTableViewCell(style: UITableViewCell.CellStyle.value1, reuseIdentifier: NSStringFromClass(ZQPopupMenuTableViewCell.self))
-        }
-        guard let config = config else {
-            return cell!
-        }
-        let itemConfig = config.itemConfig
-        (cell as! ZQPopupMenuTableViewCell).index = indexPath.row
-        (cell as! ZQPopupMenuTableViewCell).itemConfig = itemConfig
-        return cell!
     }
     
     public func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         delegate?.didSelected?(popMenu: self, index: indexPath.row)
-        guard let config = config else {
-            return
-        }
+        guard let config = config else { return }
         if config.backConfig.dismissOnSelected {
             dismiss()
         }
     }
     
     public func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        guard let config = config else {
-            return 0
-        }
+        guard let config = config else { return 0 }
         return config.itemConfig.itemHeight
     }
 }
@@ -508,7 +544,7 @@ public extension UIBezierPath {
         let arrowHeight:CGFloat = arrowConfig.arrowHeight
         let arrowWidthHalf:CGFloat = arrowConfig.arrowWidth / 2
         var arrowPosition:CGFloat = arrowConfig.arrowPosition
-    
+        
         bezierPath.lineWidth = borderWidth
         
         let x:CGFloat = borderWidth / 2
@@ -543,7 +579,7 @@ public extension UIBezierPath {
             bottomLeftArcCenter = CGPoint(x: bottomLeftRadius + x,
                                           y: height - bottomLeftRadius + x)
             bottomRightArcCenter = CGPoint(x: width - bottomRightRadius + x,
-                                          y: height - bottomRightRadius + x)
+                                           y: height - bottomRightRadius + x)
             
             if arrowPosition < topLeftRadius + arrowWidthHalf {
                 arrowPosition = topLeftRadius + arrowWidthHalf

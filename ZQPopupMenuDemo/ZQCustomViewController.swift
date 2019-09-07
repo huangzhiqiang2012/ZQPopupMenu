@@ -40,14 +40,14 @@ class ZQCustomPopMenuTableViewCell: UITableViewCell {
 }
 
 class ZQCustomViewController: UIViewController {
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = UIColor.white
         title = "try to touch the view"
     }
     
-    fileprivate lazy var dataArr:[String] = {
+    private lazy var dataArr:[String] = {
         var dataArr:[String] = [String]()
         for i:Int in 0..<10 {
             dataArr.append("custom cell \(i)")
@@ -55,17 +55,16 @@ class ZQCustomViewController: UIViewController {
         return dataArr
     }()
     
-    fileprivate lazy var config:ZQPopupMenuConfig = {
+    private lazy var config:ZQPopupMenuConfig = {
         let config = ZQPopupMenuConfig()
         let backConfig = ZQPopupMenuBackConfig()
         backConfig.dismissOnSelected = false
-        backConfig.dismissOnTouchBack = false
+        backConfig.dismissOnTouchBack = true
         backConfig.backColor = UIColor.black
         backConfig.borderColor = UIColor.red
         backConfig.borderWidth = 1
         config.backConfig = backConfig
         let itemConfig = ZQPopupMenuItemConfig()
-        itemConfig.customCellNumber = dataArr.count
         config.itemConfig = itemConfig
         return config
     }()
@@ -78,14 +77,19 @@ class ZQCustomViewController: UIViewController {
 }
 
 extension ZQCustomViewController : ZQPopupMenuDelegate {
-    func cellForRow(popMenu: ZQPopupMenu, index: NSInteger) -> UITableViewCell {
-        var cell = popMenu.tableView.dequeueReusableCell(withIdentifier: NSStringFromClass(ZQCustomPopMenuTableViewCell.self))
-        if cell == nil {
-            cell = ZQCustomPopMenuTableViewCell(style: .default, reuseIdentifier: NSStringFromClass(ZQCustomPopMenuTableViewCell.self))
-            (cell as! ZQCustomPopMenuTableViewCell).titleLabel.textAlignment = index % 2 == 0 ? .center : .left
-            (cell as! ZQCustomPopMenuTableViewCell).titleLabel.text = dataArr[index]
-        }
-        return cell!
+    func customTableViewCellNumber(popMenu: ZQPopupMenu) -> Int {
+        return dataArr.count
+    }
+    
+    func customTableViewCellClassForPopMenu(popMenu: ZQPopupMenu) -> AnyClass {
+        return ZQCustomPopMenuTableViewCell.self
+    }
+    
+    func setupCustomTableViewCell(popMenu: ZQPopupMenu, cell: UITableViewCell, forIndex index: Int) {
+        guard cell.isKind(of: ZQCustomPopMenuTableViewCell.self) else { return }
+        let newCell:ZQCustomPopMenuTableViewCell = cell as! ZQCustomPopMenuTableViewCell
+        newCell.titleLabel.textAlignment = index % 2 == 0 ? .center : .left
+        newCell.titleLabel.text = dataArr[index]
     }
     
     func didSelected(popMenu: ZQPopupMenu, index: NSInteger) {

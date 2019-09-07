@@ -138,9 +138,6 @@ public class ZQPopupMenuItemConfig: NSObject {
     
     /// 分割线的高, 默认 0.5
     public var separatorHeight:CGFloat = 0.5
-    
-    /// 自定义cell个数, 默认 0
-    public var customCellNumber:NSInteger = 0
 }
 
 // MARK: 配置信息对象
