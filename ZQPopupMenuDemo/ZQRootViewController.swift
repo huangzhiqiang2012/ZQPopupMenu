@@ -18,7 +18,7 @@ class ZQRootViewController: UIViewController {
     }
     
     fileprivate lazy var config:ZQPopupMenuConfig = {
-        let config = ZQPopupMenuConfig()
+        let config = ZQPopupMenuConfig.default
         let backConfig = ZQPopupMenuBackConfig()
         backConfig.backColor = UIColor.black
         backConfig.borderColor = UIColor.red
@@ -38,7 +38,7 @@ class ZQRootViewController: UIViewController {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         let point = event?.allTouches?.first?.location(in: view)
         config.backConfig.showPoint = point ?? CGPoint.zero
-        ZQPopupMenu.showMenu(with: config, delegate: self)
+        ZQPopupMenu.showMenu(delegate: self)
     }
 }
 

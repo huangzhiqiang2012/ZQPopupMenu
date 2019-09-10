@@ -151,4 +151,13 @@ public class ZQPopupMenuConfig: NSObject {
     
     /// item设置
     public var itemConfig:ZQPopupMenuItemConfig = ZQPopupMenuItemConfig()
+    
+    /// 单例
+    public static let `default` = ZQPopupMenuConfig()
+    
+    public class func resetConfig() {
+        ZQPopupMenuConfig.default.backConfig = ZQPopupMenuBackConfig()
+        ZQPopupMenuConfig.default.arrowConfig = ZQPopupMenuArrowConfig()
+        ZQPopupMenuConfig.default.itemConfig = ZQPopupMenuItemConfig()
+    }
 }

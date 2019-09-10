@@ -56,7 +56,7 @@ class ZQCustomViewController: UIViewController {
     }()
     
     private lazy var config:ZQPopupMenuConfig = {
-        let config = ZQPopupMenuConfig()
+        let config = ZQPopupMenuConfig.default
         let backConfig = ZQPopupMenuBackConfig()
         backConfig.dismissOnSelected = false
         backConfig.dismissOnTouchBack = true
@@ -72,7 +72,7 @@ class ZQCustomViewController: UIViewController {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         let point = event?.allTouches?.first?.location(in: view)
         config.backConfig.showPoint = point ?? CGPoint.zero
-        ZQPopupMenu.showMenu(with: config, delegate: self)
+        ZQPopupMenu.showMenu(delegate: self)
     }
 }
 
